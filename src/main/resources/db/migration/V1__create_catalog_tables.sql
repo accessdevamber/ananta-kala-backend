@@ -36,6 +36,8 @@ CREATE TABLE public.products (
 
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
 
+    specifications JSONB NOT NULL DEFAULT '{}'::jsonb,
+
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
 
@@ -55,7 +57,10 @@ CREATE TABLE public.products (
             'ACTIVE',
             'INACTIVE',
             'DISCONTINUED'
-        ))
+        )),
+
+    CONSTRAINT chk_products_specs_object
+        CHECK (jsonb_typeof(specifications) = 'object')
 );
 
 
