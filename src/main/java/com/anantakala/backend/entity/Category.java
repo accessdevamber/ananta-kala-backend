@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@Slf4j
 public class Category {
 
     @Id
@@ -50,9 +52,13 @@ public class Category {
     @PrePersist
     public void prePersist() {
 
+        log.info("Inside prePersist()");
+
         if (id == null) {
             id = UuidV7Generator.generate();
         }
+
+        log.info("UUIDV7 id generated : {}", id);
 
         Instant now = Instant.now();
 
@@ -65,6 +71,8 @@ public class Category {
 
     @PreUpdate
     public void preUpdate() {
+
+        log.info("Inside preUpdate()");
         updatedAt = Instant.now();
     }
 }
