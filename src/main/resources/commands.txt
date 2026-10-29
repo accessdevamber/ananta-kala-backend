@@ -1,0 +1,52 @@
+add in intellij run config : DB_URL=jdbc:postgresql://localhost:5432/ananta_kala_db;DB_USERNAME=root;DB_PASSWORD=root
+
+#=====================================
+# terminal run using environment variable
+
+DB_URL="jdbc:postgresql://localhost:5432/ananta_kala_db" \
+DB_USERNAME="root" \
+DB_PASSWORD="root" \
+./mvnw spring-boot:run
+
+OR
+
+export DB_URL="jdbc:postgresql://localhost:5432/ananta_kala_db"
+export DB_USERNAME="root"
+export DB_PASSWORD="root"
+
+echo $DB_URL
+echo $DB_USERNAME
+echo $DB_PASSWORD
+
+Then start app :
+
+./mvnw spring-boot:run
+
+OR
+
+mvn spring-boot:run
+
+OR
+
+export DB_URL="jdbc:postgresql://localhost:5432/ananta_kala_db"
+export DB_USERNAME="root"
+export DB_PASSWORD="root"
+
+java -jar target/ananta-kala-backend-0.0.1-SNAPSHOT.jar
+
+OR
+
+export DB_URL="jdbc:postgresql://localhost:5432/ananta_kala_db"
+export DB_USERNAME="root"
+export DB_PASSWORD="root"
+
+mvn clean package
+
+OR
+
+DB_URL="jdbc:postgresql://localhost:5432/ananta_kala_db" \
+DB_USERNAME="root" \
+DB_PASSWORD="root" \
+java -jar target/ananta-kala-backend-0.0.1-SNAPSHOT.jar
+
+ambersingh@ambers-MacBook-Pro product-service % ./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration"
