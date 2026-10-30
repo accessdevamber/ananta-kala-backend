@@ -33,6 +33,7 @@ public class Category {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
+    //Because of FetchType.LAZY, Hibernate can defer loading the parent's full details until they're needed.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "parent_id",

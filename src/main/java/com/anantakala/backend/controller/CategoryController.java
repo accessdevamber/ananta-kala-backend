@@ -1,5 +1,6 @@
 package com.anantakala.backend.controller;
 
+import com.anantakala.backend.dto.category.CategoryPatchRequest;
 import com.anantakala.backend.dto.category.CategoryRequest;
 import com.anantakala.backend.dto.category.CategoryResponse;
 import com.anantakala.backend.service.CategoryService;
@@ -44,5 +45,19 @@ public class CategoryController {
         log.info("Inside findBySlug() category");
         return categoryService.findBySlug(slug);
     }
+
+
+    @PutMapping("/{id}")
+    public CategoryResponse updateCategoryObject(@PathVariable UUID id, @RequestBody CategoryRequest request) {
+        log.info("Inside updateCategoryObject() category");
+        return categoryService.update(id, request);
+    }
+
+    @PatchMapping("/{id}")
+    public CategoryResponse updateCategoryFields(@PathVariable UUID id, @RequestBody CategoryPatchRequest request) {
+        log.info("Inside updateCategoryFields() category");
+        return categoryService.patch(id, request);
+    }
+
 }
 
