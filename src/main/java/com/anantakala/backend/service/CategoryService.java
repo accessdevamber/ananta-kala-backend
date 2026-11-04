@@ -228,6 +228,10 @@ public class CategoryService {
             category.setSlug(requiredJsonText(request.slug(), "slug"));
             validateUniqueSlug(category.getSlug(), id);
         }
+
+        //{"description": null}
+        //request.description() is a NullNode object, which is not the same as Java null.
+        //below will give true and !=null is true as it is NullNode object and not java null
         if (request.description() != null) {
             JsonNode node = request.description();
             if (node.isNull()) {
@@ -340,3 +344,94 @@ public class CategoryService {
     }
 
 }
+
+//1. First, understand these three JSON requests
+
+//Suppose the existing category is:
+//{
+//  "name": "Lord Shiva",
+//  "description": "Premium Lord Shiva devotional artworks",
+//  "active": true
+//}
+
+//Now consider three PATCH requests.
+
+//Case A — Description field is missing
+//{
+//  "name": "Shiva Collection"
+//}
+
+//Jackson maps request.description() to Java null.
+//Result: Keep the existing description unchanged.
+//Case B — Description explicitly contains JSON null
+//{
+//  "description": null
+//}
+
+//Jackson maps request.description() to a NullNode object.
+//Result: Clear the description, storing SQL NULL in PostgreSQL.
+//Case C — Description contains the string "null"
+//{
+//  "description": "null"
+//}
+
+//Jackson maps request.description() to a TextNode containing the four characters n, u, l, l.
+//Result: Store the literal text "null" as the description.
+
+//Comparison
+//JSON request	                    Java request.description()	node.isNull()
+//{}	                            Java null	                Not called
+//{"description": null}	            NullNode	                true
+//{"description": "null"}	        TextNode("null")	        false
+//{"description": "Shiva Art"}	    TextNode("Shiva Art")	    false
+
+//Important: JSON null does not automatically become the string "null".
+// The quotation marks are what distinguish a JSON string from the JSON null value.
+
+//2. Let's understand your actual PATCH code
+//You wrote:
+//if (request.description() != null) {
+//    JsonNode node = request.description();
+//
+//    if (node.isNull()) {
+//        category.setDescription(null);
+//    } else {
+//        category.setDescription(requiredJsonText(node, "description"));
+//    }
+//}
+
+//Here's exactly what happens.
+//First condition
+//if (request.description() != null)
+//This checks whether the Java reference is non-null.
+
+//For a missing field:
+//{}
+
+//request.description() is Java null, so the condition is false.
+//We skip the entire block, and the existing description remains unchanged.
+//For an explicitly supplied JSON null:
+//{"description": null}
+
+//request.description() is a NullNode object, which is not the same as Java null.
+//Therefore:
+//request.description() != null  // true
+
+//We enter the block.
+//Second condition
+//if (node.isNull())
+//Now Jackson checks what kind of JSON value the node represents.
+
+//For NullNode:
+//node.isNull() // true
+
+//Therefore:
+//category.setDescription(null);
+
+//This clears the description.
+//For TextNode("null"):
+//node.isNull() // false
+
+//The code proceeds to requiredJsonText() and stores the string "null".
+//So the code is not converting null into a string and then converting it back.
+// It is distinguishing Java null, a JSON null node, and a JSON string node.

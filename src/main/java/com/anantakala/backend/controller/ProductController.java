@@ -1,6 +1,7 @@
 
 package com.anantakala.backend.controller;
 
+import com.anantakala.backend.dto.product.ProductPatchRequest;
 import com.anantakala.backend.dto.product.ProductRequest;
 import com.anantakala.backend.dto.product.ProductResponse;
 import com.anantakala.backend.service.ProductService;
@@ -48,5 +49,22 @@ public class ProductController {
     }
 
 
+    @PutMapping("/{id}")
+    public ProductResponse updateProductObject(
+            @PathVariable UUID id,
+            @RequestBody ProductRequest request
+    ) {
+        log.info("Inside updateProductObject() product");
+        return productService.update(id, request);
+    }
+
+    @PatchMapping("/{id}")
+    public ProductResponse patchProductFields(
+            @PathVariable UUID id,
+            @RequestBody ProductPatchRequest request
+    ) {
+        log.info("Inside patchProductFields() product");
+        return productService.patch(id, request);
+    }
 
 }
