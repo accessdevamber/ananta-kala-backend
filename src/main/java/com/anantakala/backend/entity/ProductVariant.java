@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@Slf4j
 public class ProductVariant {
 
     @Id
@@ -70,6 +72,7 @@ public class ProductVariant {
             id = UuidV7Generator.generate();
         }
 
+        log.info("UUIDV7 id generated : {}", id);
         Instant now = Instant.now();
 
         if (createdAt == null) {
@@ -81,6 +84,7 @@ public class ProductVariant {
 
     @PreUpdate
     public void preUpdate() {
+        log.info("Inside preUpdate()");
         updatedAt = Instant.now();
     }
 }
