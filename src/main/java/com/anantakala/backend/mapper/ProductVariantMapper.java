@@ -6,6 +6,7 @@ import com.anantakala.backend.dto.productvariant.ProductVariantResponse;
 import com.anantakala.backend.entity.ProductVariant;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface ProductVariantMapper {
@@ -26,6 +27,12 @@ public interface ProductVariantMapper {
 
     @Mapping(target = "productId", source = "product.id")
     ProductVariantResponse toResponse(ProductVariant variant);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "product", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntity(ProductVariantRequest request, @MappingTarget ProductVariant variant);
 }
 
 //Why ignore product?

@@ -4,7 +4,9 @@ package com.anantakala.backend.controller;
 import com.anantakala.backend.dto.product.ProductPatchRequest;
 import com.anantakala.backend.dto.product.ProductRequest;
 import com.anantakala.backend.dto.product.ProductResponse;
+import com.anantakala.backend.dto.productvariant.ProductVariantResponse;
 import com.anantakala.backend.service.ProductService;
+import com.anantakala.backend.service.ProductVariantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductVariantService variantService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -65,6 +68,13 @@ public class ProductController {
     ) {
         log.info("Inside patchProductFields() product");
         return productService.patch(id, request);
+    }
+
+    @GetMapping("/{productId}/variants")
+    public List<ProductVariantResponse> findVariantsByProductId(
+            @PathVariable UUID productId) {
+        log.info("Inside findVariantsByProductId() product");
+        return variantService.findByProductId(productId);
     }
 
 }
