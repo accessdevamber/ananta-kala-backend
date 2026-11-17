@@ -1,6 +1,7 @@
 package com.anantakala.backend.repository;
 
 import com.anantakala.backend.entity.ProductImage;
+import com.anantakala.backend.entity.ProductVariant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,9 +11,11 @@ import java.util.UUID;
 @Repository
 public interface ProductImageRepository extends JpaRepository<ProductImage, UUID> {
 
-    List<ProductImage> findByProductIdOrderBySortOrderAsc(UUID productId);
+    //List<ProductImage> findByProductIdOrderBySortOrderAsc(UUID productId);
+    List<ProductImage> findByProduct_IdOrderBySortOrderAscIdAsc(UUID productId);
 
     boolean existsByProductIdAndPrimaryTrue(UUID productId);
+    //List<ProductImage> findByProduct_Id(UUID productId);
 }
 
 //CREATE UNIQUE INDEX uk_product_images_primary

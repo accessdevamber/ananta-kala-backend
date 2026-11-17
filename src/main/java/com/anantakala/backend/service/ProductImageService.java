@@ -1,7 +1,9 @@
 package com.anantakala.backend.service;
 
+import com.anantakala.backend.dto.product.ProductResponse;
 import com.anantakala.backend.dto.productimage.ProductImageRequest;
 import com.anantakala.backend.dto.productimage.ProductImageResponse;
+import com.anantakala.backend.dto.productvariant.ProductVariantResponse;
 import com.anantakala.backend.entity.Product;
 import com.anantakala.backend.entity.ProductImage;
 import com.anantakala.backend.mapper.ProductImageMapper;
@@ -14,6 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -95,6 +100,56 @@ public class ProductImageService {
 
         ProductImageResponse response = imageMapper.toResponse(saved);
         log.info("Saved product : {}", objectMapper.writeValueAsString(response));
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public ProductImageResponse findById(UUID id) {
+
+        ProductImage productImage = imageRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Product image not found");
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Product image not found with ID: " + id
+                    );
+                });
+        ProductImageResponse response = imageMapper.toResponse(productImage);
+        log.info("Fetched product image by Id : {}", objectMapper.writeValueAsString(response));
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductImageResponse> findAll() {
+
+        List<ProductImageResponse> response = imageRepository.findAll()
+                .stream()
+                .map(imageMapper::toResponse)
+                .toList();
+        log.info("Fetched all product images : {}", objectMapper.writeValueAsString(response));
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductImageResponse> findImagesByProductId(UUID productId) {
+
+        // Verify that the parent Product exists
+        if (!productRepository.existsById(productId)) {
+            log.warn("Invalid productId");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Product not found with ID: " + productId
+            );
+        }
+
+        // Fetch images belonging to this Product
+        List<ProductImageResponse> response = imageRepository.findByProduct_IdOrderBySortOrderAscIdAsc(productId)
+                .stream()
+                .map(imageMapper::toResponse)
+                .toList();
+
+        log.info("Fetched {} images for productId: {}", response.size(), productId);
+        log.info("Fetched ProductImage by productId : {}", objectMapper.writeValueAsString(response));
         return response;
     }
 }

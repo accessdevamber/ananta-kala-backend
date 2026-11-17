@@ -174,12 +174,12 @@ public class ProductImage {
 //CREATE UNIQUE INDEX uk_product_images_primary
 //ON public.product_images(product_id)
 //WHERE is_primary = TRUE;
-//
-//
+
 //This means one product can have at most one primary image.
 //- P101 → Original Shiva image is primary.
 //- P102 → Original Hanuman image is primary.
 //- P101 cannot have two images marked is_primary = TRUE.
+
 //Notice that image_type = 'MAIN' and is_primary = TRUE are technically separate concepts.
 // Our current SQL doesn't force every MAIN image to be primary or prevent a MOCKUP image from being primary.
 //

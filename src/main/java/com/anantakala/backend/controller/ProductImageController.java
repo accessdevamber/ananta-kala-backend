@@ -1,6 +1,7 @@
 package com.anantakala.backend.controller;
 
 
+import com.anantakala.backend.dto.product.ProductResponse;
 import com.anantakala.backend.dto.productimage.ProductImageRequest;
 import com.anantakala.backend.dto.productimage.ProductImageResponse;
 import com.anantakala.backend.service.ProductImageService;
@@ -8,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/product-images")
@@ -24,6 +28,18 @@ public class ProductImageController {
     ) {
         log.info("Inside create() ProductImage");
         return imageService.create(request);
+    }
+
+    @GetMapping("/{id}")
+    public ProductImageResponse findById(@PathVariable UUID id) {
+        log.info("Inside findById() ProductImage");
+        return imageService.findById(id);
+    }
+
+    @GetMapping
+    public List<ProductImageResponse> findAll() {
+        log.info("Inside findAll() ProductImage");
+        return imageService.findAll();
     }
 }
 

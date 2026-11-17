@@ -4,7 +4,9 @@ package com.anantakala.backend.controller;
 import com.anantakala.backend.dto.product.ProductPatchRequest;
 import com.anantakala.backend.dto.product.ProductRequest;
 import com.anantakala.backend.dto.product.ProductResponse;
+import com.anantakala.backend.dto.productimage.ProductImageResponse;
 import com.anantakala.backend.dto.productvariant.ProductVariantResponse;
+import com.anantakala.backend.service.ProductImageService;
 import com.anantakala.backend.service.ProductService;
 import com.anantakala.backend.service.ProductVariantService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final ProductVariantService variantService;
+    private final ProductImageService imageService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -75,6 +78,13 @@ public class ProductController {
             @PathVariable UUID productId) {
         log.info("Inside findVariantsByProductId() product");
         return variantService.findByProductId(productId);
+    }
+
+    @GetMapping("/{productId}/images")
+    public List<ProductImageResponse> findImagesByProductId(
+            @PathVariable UUID productId) {
+        log.info("Inside findImagesByProductId() product");
+        return imageService.findImagesByProductId(productId);
     }
 
 }
