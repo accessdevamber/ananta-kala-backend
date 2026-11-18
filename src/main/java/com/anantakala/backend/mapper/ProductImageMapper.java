@@ -5,6 +5,7 @@ import com.anantakala.backend.dto.productimage.ProductImageResponse;
 import com.anantakala.backend.entity.ProductImage;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface ProductImageMapper {
@@ -29,4 +30,12 @@ public interface ProductImageMapper {
 
     @Mapping(target = "productId", source = "product.id")
     ProductImageResponse toResponse(ProductImage image);
+
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "product", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntity(ProductImageRequest request, @MappingTarget ProductImage image);
+
 }

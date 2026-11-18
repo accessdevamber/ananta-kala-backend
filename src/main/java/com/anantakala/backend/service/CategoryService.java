@@ -363,6 +363,7 @@ public class CategoryService {
 
 //Jackson maps request.description() to Java null.
 //Result: Keep the existing description unchanged.
+
 //Case B — Description explicitly contains JSON null
 //{
 //  "description": null
@@ -370,6 +371,7 @@ public class CategoryService {
 
 //Jackson maps request.description() to a NullNode object.
 //Result: Clear the description, storing SQL NULL in PostgreSQL.
+
 //Case C — Description contains the string "null"
 //{
 //  "description": "null"
@@ -409,6 +411,7 @@ public class CategoryService {
 //{}
 
 //request.description() is Java null, so the condition is false.
+
 //We skip the entire block, and the existing description remains unchanged.
 //For an explicitly supplied JSON null:
 //{"description": null}

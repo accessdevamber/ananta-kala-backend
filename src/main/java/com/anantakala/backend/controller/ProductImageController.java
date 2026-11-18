@@ -2,6 +2,7 @@ package com.anantakala.backend.controller;
 
 
 import com.anantakala.backend.dto.product.ProductResponse;
+import com.anantakala.backend.dto.productimage.ProductImagePatchRequest;
 import com.anantakala.backend.dto.productimage.ProductImageRequest;
 import com.anantakala.backend.dto.productimage.ProductImageResponse;
 import com.anantakala.backend.service.ProductImageService;
@@ -41,5 +42,27 @@ public class ProductImageController {
         log.info("Inside findAll() ProductImage");
         return imageService.findAll();
     }
+
+
+    @PutMapping("/{id}")
+    public ProductImageResponse update(
+            @PathVariable UUID id,
+            @RequestBody ProductImageRequest request
+    ) {
+        log.info("Inside update() ProductImage, id: {}", id);
+        return imageService.update(id, request);
+    }
+
+
+    @PatchMapping("/{id}")
+    public ProductImageResponse patch(
+            @PathVariable UUID id,
+            @RequestBody ProductImagePatchRequest request
+    ) {
+        log.info("Inside patch() ProductImage, id: {}", id);
+        return imageService.patch(id, request);
+    }
+
+
 }
 
