@@ -64,5 +64,14 @@ public class ProductImageController {
     }
 
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        log.info("Inside delete() ProductImage, id: {}", id);
+        imageService.delete(id);
+    }
+
+
+
 }
 

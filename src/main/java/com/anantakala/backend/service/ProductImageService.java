@@ -480,13 +480,36 @@ public class ProductImageService {
         // 14. Convert entity to response DTO
         ProductImageResponse response = imageMapper.toResponse(image);
 
-        log.info(
-                "Patched ProductImage response: {}",
-                objectMapper.writeValueAsString(response)
-        );
+        log.info("Patched ProductImage response: {}", objectMapper.writeValueAsString(response));
 
         return response;
     }
+
+
+    @Transactional
+    public void delete(UUID id) {
+
+        // 1. Find existing ProductImage
+        ProductImage image = imageRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Product image not found with ID: {}", id);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Product image not found with ID: " + id
+                    );
+                });
+
+        ProductImageResponse response = imageMapper.toResponse(image);
+
+        // 2. Delete the ProductImage
+        imageRepository.delete(image);
+
+        // 3. Flush DELETE SQL to PostgreSQL
+        imageRepository.flush();
+
+        log.info("Deleted ProductImage : {}", objectMapper.writeValueAsString(response));
+    }
+
 
 
 
