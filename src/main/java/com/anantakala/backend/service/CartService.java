@@ -23,6 +23,8 @@ import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,16 +56,44 @@ public class CartService {
         //log.info("Created Cart with ID: {}", savedCart.getId());
 
         // 4. Convert entity to response DTO
-        CartResponse response = cartMapper.toResponse(savedCart);
+        CartResponse response = new CartResponse(
+                savedCart.getId(),
+                savedCart.getStatus(),
+                List.of(),
+                BigDecimal.ZERO,
+                savedCart.getCreatedAt(),
+                savedCart.getUpdatedAt()
+        );
+        //CartResponse response = cartMapper.toResponse(savedCart);
         log.info("Created Cart : {}", objectMapper.writeValueAsString(response));
         return response;
     }
 
 
+//    @Transactional(readOnly = true)
+//    public CartResponse getById(UUID cartId) {
+//
+//        // 1. Fetch Cart from PostgreSQL
+//        Cart cart = cartRepository.findById(cartId)
+//                .orElseThrow(() -> {
+//                    log.warn("Cart not found with ID: {}", cartId);
+//                    return new ResponseStatusException(
+//                            HttpStatus.NOT_FOUND,
+//                            "Cart not found with ID: " + cartId
+//                    );
+//                });
+//
+//        // 2. Convert Cart entity to DTO
+//        CartResponse response = cartMapper.toResponse(cart);
+//        log.info("Fetched Cart : {}", objectMapper.writeValueAsString(response));
+//        return response;
+//    }
+
+
     @Transactional(readOnly = true)
     public CartResponse getById(UUID cartId) {
 
-        // 1. Fetch Cart from PostgreSQL
+        // 1. Find Cart
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> {
                     log.warn("Cart not found with ID: {}", cartId);
@@ -73,11 +103,46 @@ public class CartService {
                     );
                 });
 
-        // 2. Convert Cart entity to DTO
-        CartResponse response = cartMapper.toResponse(cart);
-        log.info("Fetched Cart : {}", objectMapper.writeValueAsString(response));
-        return response;
+        // 2. Fetch all CartItems with their ProductVariants
+        List<CartItem> cartItems = cartItemRepository
+                .findByCart_IdOrderByCreatedAtAscIdAsc(cartId);
+
+        // 3. Calculate each CartItem's line total
+        List<CartItemResponse> itemResponses = new ArrayList<>();
+
+        BigDecimal subtotal = BigDecimal.ZERO;
+
+        for (CartItem item : cartItems) {
+
+            BigDecimal unitPrice = item.getProductVariant()
+                    .getPrice();
+
+            BigDecimal lineTotal = unitPrice.multiply(
+                    BigDecimal.valueOf(item.getQuantity())
+            );
+
+            CartItemResponse itemResponse = cartItemMapper.toResponse(
+                    item,
+                    unitPrice,
+                    lineTotal
+            );
+
+            itemResponses.add(itemResponse);
+
+            subtotal = subtotal.add(lineTotal);
+        }
+
+        // 4. Return complete Cart response
+        return new CartResponse(
+                cart.getId(),
+                cart.getStatus(),
+                itemResponses,
+                subtotal,
+                cart.getCreatedAt(),
+                cart.getUpdatedAt()
+        );
     }
+
 
 
     @Transactional
