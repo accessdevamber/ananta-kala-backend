@@ -67,6 +67,7 @@ public class Cart {
         if (status == null) {
             status = CartStatus.ACTIVE;
         }
+        log.info("UUIDV7 id generated : {}", id);
 
         Instant now = Instant.now();
 
@@ -79,6 +80,7 @@ public class Cart {
 
     @PreUpdate
     public void preUpdate() {
+        log.info("Inside preUpdate()");
         updatedAt = Instant.now();
     }
 
@@ -88,8 +90,10 @@ public class Cart {
     }
 
     public void removeItem(CartItem item) {
-        items.remove(item);
-        item.setCart(null);
+        if (items.remove(item)) {
+            item.setCart(null);
+        }
+
     }
 }
 
