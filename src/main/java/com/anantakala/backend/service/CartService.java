@@ -3,6 +3,7 @@ package com.anantakala.backend.service;
 import com.anantakala.backend.dto.cart.AddCartItemRequest;
 import com.anantakala.backend.dto.cart.CartItemResponse;
 import com.anantakala.backend.dto.cart.CartResponse;
+import com.anantakala.backend.dto.cart.UpdateCartItemRequest;
 import com.anantakala.backend.entity.Cart;
 import com.anantakala.backend.entity.CartItem;
 import com.anantakala.backend.entity.ProductVariant;
@@ -144,7 +145,6 @@ public class CartService {
     }
 
 
-
     @Transactional
     public CartItemResponse addItem(
             UUID cartId,
@@ -174,16 +174,25 @@ public class CartService {
         ProductVariant variant = productVariantRepository
                 .findById(request.productVariantId())
                 .orElseThrow(() -> {
-                    log.warn("ProductVariant not found with ID: {}", request.productVariantId());
+                    log.warn(
+                            "ProductVariant not found with ID: {}",
+                            request.productVariantId()
+                    );
                     return new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
                             "ProductVariant not found with ID: "
                                     + request.productVariantId()
                     );
                 });
-        log.info("Adding productVariant : {}", objectMapper.writeValueAsString(variantMapper.toResponse(variant)));
 
-        // 4. Check whether the variant is available
+        log.info(
+                "Adding productVariant : {}",
+                objectMapper.writeValueAsString(
+                        variantMapper.toResponse(variant)
+                )
+        );
+
+        // 4. Validate availability
         if (!variant.isActive()) {
             log.warn("ProductVariant is inactive");
             throw new ResponseStatusException(
@@ -200,20 +209,20 @@ public class CartService {
             );
         }
 
-        // 5. Find an existing CartItem for this variant
+        // 5. Check if this variant is already in the Cart
         Optional<CartItem> existingItem = cartItemRepository
                 .findByCart_IdAndProductVariant_Id(
                         cartId,
                         request.productVariantId()
                 );
 
-        //variable to store final saved cartItem
         CartItem savedItem;
 
         if (existingItem.isPresent()) {
 
-            log.info("productVariant already exists in the existing cart. Increasing quantity");
-            // Same variant already exists: increase quantity
+            // CASE 1: Existing CartItem - increase quantity
+            log.info("ProductVariant already exists in Cart. Increasing quantity");
+
             CartItem item = existingItem.get();
 
             int newQuantity;
@@ -231,40 +240,206 @@ public class CartService {
                 );
             }
 
-            item.setQuantity(newQuantity);//set new quantity
+            item.setQuantity(newQuantity);
 
+            // No cart.addItem(item) here.
+            // The CartItem already belongs to this Cart.
             savedItem = cartItemRepository.saveAndFlush(item);
 
         } else {
 
-            log.info("productVariant doesn't exist in the existing cart. Adding new productVariant to cart");
-            // New variant: create a CartItem
+            // CASE 2: New CartItem
+            log.info("ProductVariant not found in Cart. Creating new CartItem");
+
             CartItem item = new CartItem();
 
-            item.setCart(cart);
             item.setProductVariant(variant);
             item.setQuantity(request.quantity());
+
+            // Synchronize both sides of the relationship.
+            // Internally:
+            //   cart.getItems().add(item);
+            //   item.setCart(cart);
+            cart.addItem(item);
 
             savedItem = cartItemRepository.saveAndFlush(item);
         }
 
-        // 6. Calculate price using ProductVariant
+        // 6. Calculate prices
         BigDecimal unitPrice = variant.getPrice();
 
         BigDecimal lineTotal = unitPrice.multiply(
                 BigDecimal.valueOf(savedItem.getQuantity())
         );
 
-        // 7. Convert to response DTO
+        // 7. Map response
         CartItemResponse response = cartItemMapper.toResponse(
                 savedItem,
                 unitPrice,
                 lineTotal
         );
 
-        log.info("Created cartItem for cartId {} : {}", cartId, response);
+        log.info("Created/updated CartItem for cartId {} : {}", cartId, response);
+
         return response;
     }
+
+
+
+    @Transactional
+    public CartItemResponse updateItemQuantity(
+            UUID cartId,
+            UUID itemId,
+            UpdateCartItemRequest request
+    ) {
+
+        // 1. Validate Cart
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> {
+                    log.warn("Cart not found with ID: {}", cartId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Cart not found with ID: " + cartId
+                    );
+                });
+
+        // 2. Only ACTIVE carts can be modified
+        if (cart.getStatus() != CartStatus.ACTIVE) {
+            log.warn("Cannot update items in a non-active cart");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot update items in a non-active cart"
+            );
+        }
+
+        // 3. Find CartItem
+        CartItem item = cartItemRepository.findById(itemId)
+                .orElseThrow(() -> {
+                    log.warn("CartItem not found with ID: {}", itemId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "CartItem not found with ID: " + itemId
+                    );
+                });
+
+        // 4. Verify that the CartItem belongs to this Cart
+        if (!item.getCart().getId().equals(cartId)) {
+            log.warn("CartItem not found in the specified Cart");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "CartItem not found in the specified Cart"
+            );
+        }
+
+        // 5. Set the exact quantity
+        item.setQuantity(request.quantity());
+
+        // 6. Persist the change
+        CartItem savedItem = cartItemRepository.saveAndFlush(item);
+
+        // 7. Calculate the updated line total
+        BigDecimal unitPrice = savedItem
+                .getProductVariant()
+                .getPrice();
+
+        BigDecimal lineTotal = unitPrice.multiply(
+                BigDecimal.valueOf(savedItem.getQuantity())
+        );
+
+        // 8. Convert entity to response DTO
+        CartItemResponse response = cartItemMapper.toResponse(
+                savedItem,
+                unitPrice,
+                lineTotal
+        );
+        log.info("Updated cartItem quantity for cartId {}, itemId {} : {}", cartId, itemId, response);
+        return response;
+    }
+
+
+    @Transactional
+    public void deleteItem(UUID cartId, UUID itemId) {
+
+        // 1. Find the Cart
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> {
+                    log.warn("Cart not found with ID: {}", cartId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Cart not found with ID: " + cartId
+                    );
+                });
+
+        // 2. Only ACTIVE carts can be modified
+        if (cart.getStatus() != CartStatus.ACTIVE) {
+            log.warn("Cannot delete items from a non-active cart");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete items from a non-active cart"
+            );
+        }
+
+        // 3. Find the CartItem
+        CartItem item = cartItemRepository.findById(itemId)
+                .orElseThrow(() -> {
+                    log.warn("CartItem not found with ID: {}", itemId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "CartItem not found with ID: " + itemId
+                    );
+                });
+
+        // 4. Verify that the item belongs to the Cart
+        if (!item.getCart().getId().equals(cartId)) {
+            log.warn("CartItem not found in the specified Cart");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "CartItem not found in the specified Cart"
+            );
+        }
+
+        // 5. Delete the CartItem
+        cartItemRepository.delete(item);
+
+        // 6. Log deletion
+        log.info("Deleted CartItem. Cart ID: {}, Item ID: {}", cartId, itemId);
+    }
+
+
+    @Transactional
+    public void clearCart(UUID cartId) {
+
+        // 1. Find Cart
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> {
+                    log.warn("Cart not found with ID: {}", cartId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Cart not found with ID: " + cartId
+                    );
+                });
+
+        // 2. Only ACTIVE carts can be cleared
+        if (cart.getStatus() != CartStatus.ACTIVE) {
+            log.warn("Cannot clear a non-active cart");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot clear a non-active cart"
+            );
+        }
+
+        // 3. Load the CartItems collection
+        //    and remove all items using orphanRemoval
+        cart.clearItems();
+
+        //cart.setItems(null);
+
+        // 4. Flush pending DELETE operations
+        cartRepository.flush();
+
+        log.info("Cleared all CartItems from Cart: {}", cartId);
+    }
+
 
 }
 

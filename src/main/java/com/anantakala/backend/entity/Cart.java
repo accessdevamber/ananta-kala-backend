@@ -95,6 +95,15 @@ public class Cart {
         }
 
     }
+
+    public void clearItems() {
+
+        for (CartItem item : items) {
+            item.setCart(null);
+        }
+        items.clear();
+    }
+
 }
 
 //mappedBy = "cart"

@@ -3,6 +3,7 @@ package com.anantakala.backend.controller;
 import com.anantakala.backend.dto.cart.AddCartItemRequest;
 import com.anantakala.backend.dto.cart.CartItemResponse;
 import com.anantakala.backend.dto.cart.CartResponse;
+import com.anantakala.backend.dto.cart.UpdateCartItemRequest;
 import com.anantakala.backend.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,57 @@ public class CartController {
         log.info("CartItem added/updated. Cart ID: {}, Item ID: {}", cartId, response.id());
 
         return ResponseEntity.ok(response);
+    }
+
+
+    @PatchMapping("/{cartId}/items/{itemId}")
+    public ResponseEntity<CartItemResponse> updateItemQuantity(
+            @PathVariable UUID cartId,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody UpdateCartItemRequest request
+    ) {
+
+        CartItemResponse response = cartService.updateItemQuantity(
+                cartId,
+                itemId,
+                request
+        );
+
+        log.info(
+                "Updated CartItem quantity. Cart ID: {}, Item ID: {}, Quantity: {}",
+                cartId,
+                itemId,
+                response.quantity()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+
+    @DeleteMapping("/{cartId}/items/{itemId}")
+    public ResponseEntity<Void> deleteItem(
+            @PathVariable UUID cartId,
+            @PathVariable UUID itemId
+    ) {
+
+        cartService.deleteItem(cartId, itemId);
+
+        log.info("CartItem deletion completed. Cart ID: {}, Item ID: {}", cartId, itemId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @DeleteMapping("/{cartId}/items")
+    public ResponseEntity<Void> clearCart(
+            @PathVariable UUID cartId
+    ) {
+
+        cartService.clearCart(cartId);
+
+        log.info("Cart cleared successfully: {}", cartId);
+
+        return ResponseEntity.noContent().build();
     }
 
 
