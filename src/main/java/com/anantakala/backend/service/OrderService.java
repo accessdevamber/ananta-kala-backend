@@ -1,5 +1,6 @@
 package com.anantakala.backend.service;
 
+import com.anantakala.backend.dto.PageResponse;
 import com.anantakala.backend.dto.order.CreateOrderRequest;
 import com.anantakala.backend.dto.order.OrderResponse;
 import com.anantakala.backend.entity.*;
@@ -12,6 +13,10 @@ import com.anantakala.backend.repository.CartRepository;
 import com.anantakala.backend.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -205,11 +210,11 @@ public class OrderService {
 //                ));
 
         //with @EntityGraph(attributePaths = "items")
-//        Order order = orderRepository.findByIdWithItemsUsingEntityGraph(orderId)
-//                .orElseThrow(() -> new ResponseStatusException(
-//                        HttpStatus.NOT_FOUND,
-//                        "Order not found: " + orderId
-//                ));
+        Order order = orderRepository.findByIdWithItemsUsingEntityGraph(orderId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Order not found: " + orderId
+                ));
 
         //with @Query("""
         //        SELECT o
@@ -217,11 +222,11 @@ public class OrderService {
         //        LEFT JOIN FETCH o.items
         //        WHERE o.id = :orderId
         //        """)
-        Order order = orderRepository.findByIdWithItemsUsingJoinFetch(orderId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Order not found: " + orderId
-                ));
+//        Order order = orderRepository.findByIdWithItemsUsingJoinFetch(orderId)
+//                .orElseThrow(() -> new ResponseStatusException(
+//                        HttpStatus.NOT_FOUND,
+//                        "Order not found: " + orderId
+//                ));
 
         OrderResponse response = orderMapper.toResponse(order);
 
@@ -235,6 +240,73 @@ public class OrderService {
 
         return response;
     }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OrderResponse> getAll(
+            Pageable pageable
+    ) {
+
+        log.info(
+                "Fetching Orders. Page: {}, Size: {}, Sort: {}",
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort()
+        );
+
+        // Fetch paginated Orders along with OrderItems
+        Page<Order> orderPage = orderRepository.findAllWithItems(pageable);
+
+        // Convert Page<Order> into Page<OrderResponse>
+        Page<OrderResponse> responsePage = orderPage.map(orderMapper::toResponse);
+
+        log.info(
+                "Orders fetched successfully. Page: {}, "
+                        + "Returned Orders: {}, Total Orders: {}, "
+                        + "Total Pages: {}",
+                responsePage.getNumber(),
+                responsePage.getNumberOfElements(),
+                responsePage.getTotalElements(),
+                responsePage.getTotalPages()
+        );
+
+        return PageResponse.from(responsePage);
+    }
+
+//    @Transactional(readOnly = true)
+//    public void demonstrateCollectionPagination() {
+//
+//        Pageable pageable = PageRequest.of(
+//                0,
+//                2,
+//                Sort.by(
+//                        Sort.Order.desc("createdAt"),
+//                        Sort.Order.desc("id")
+//                )
+//        );
+//
+//        Page<Order> orderPage = orderRepository.findAllWithItemsUsingPagination(pageable);
+//
+//        //Page<Order> orderPage = orderRepository.findAllWithItemsUsingJoinFetch(pageable);
+//
+//        log.info("Total Orders: {}", orderPage.getTotalElements());
+//
+//        log.info("Total Pages: {}", orderPage.getTotalPages());
+//
+//        log.info(
+//                "Current Page Elements: {}",
+//                orderPage.getNumberOfElements()
+//        );
+//
+//        for (Order order : orderPage.getContent()) {
+//
+//            log.info(
+//                    "Order ID: {}, Number of items: {}",
+//                    order.getId(),
+//                    order.getItems().size()
+//            );
+//            log.info("======================================");
+//        }
+//    }
 
     //demo
 //    @Transactional(readOnly = true)

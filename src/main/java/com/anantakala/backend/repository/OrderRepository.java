@@ -1,6 +1,8 @@
 package com.anantakala.backend.repository;
 
 import com.anantakala.backend.entity.Order;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -36,10 +38,114 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             @Param("orderId") UUID orderId
     );
 
+    // Fetch paginated Orders with OrderItems
+    @EntityGraph(attributePaths = "items")
+    @Query(
+            value = """
+                    SELECT o
+                    FROM Order o
+                    """,
+            countQuery = """
+                    SELECT COUNT(o)
+                    FROM Order o
+                    """
+    )
+    Page<Order> findAllWithItems(Pageable pageable);
+
+    //====above sql query with pagination=====
+    //select
+    //        o1_0.id,
+    //        o1_0.cart_id,
+    //        o1_0.created_at,
+    //        o1_0.currency,
+    //        o1_0.discount_amount,
+    //        i1_0.order_id,
+    //        i1_0.id,
+    //        i1_0.created_at,
+    //        i1_0.frame_finish,
+    //        i1_0.line_total,
+    //        i1_0.product_name,
+    //        i1_0.product_type,
+    //        i1_0.product_variant_id,
+    //        i1_0.quantity,
+    //        i1_0.size_label,
+    //        i1_0.sku,
+    //        i1_0.unit_price,
+    //        i1_0.updated_at,
+    //        o1_0.order_number,
+    //        o1_0.shipping_amount,
+    //        o1_0.status,
+    //        o1_0.subtotal,
+    //        o1_0.total_amount,
+    //        o1_0.updated_at
+    //    from
+    //        (select
+    //            o1_0.id,
+    //            o1_0.cart_id,
+    //            o1_0.created_at,
+    //            o1_0.currency,
+    //            o1_0.discount_amount,
+    //            o1_0.order_number,
+    //            o1_0.shipping_amount,
+    //            o1_0.status,
+    //            o1_0.subtotal,
+    //            o1_0.total_amount,
+    //            o1_0.updated_at
+    //        from
+    //            public.orders o1_0
+    //        order by
+    //            o1_0.created_at desc,
+    //            o1_0.id desc
+    //        offset
+    //            ? rows
+    //        fetch
+    //            first ? rows only) o1_0(id, cart_id, created_at, currency, discount_amount, order_number, shipping_amount, status, subtotal, total_amount, updated_at)
+    //    left join
+    //        public.order_items i1_0
+    //            on o1_0.id=i1_0.order_id
+    //    order by
+    //        o1_0.created_at desc,
+    //        o1_0.id desc
+    //
+    //Hibernate:
+    //    select
+    //        count(o1_0.id)
+    //    from
+    //        public.orders o1_0
+
+
+
+
+
+
     //demo
 //    @EntityGraph(attributePaths = "items")
 //    @Query("SELECT o FROM Order o")
 //    List<Order> findAllWithItems();
+
+//    @EntityGraph(attributePaths = "items")
+//    @Query(
+//            value = "SELECT o FROM Order o",
+//            countQuery = "SELECT COUNT(o) FROM Order o"
+//    )
+//    Page<Order> findAllWithItemsUsingPagination(
+//            Pageable pageable
+//    );
+
+//    @Query(
+//            value = """
+//                SELECT o
+//                FROM Order o
+//                LEFT JOIN FETCH o.items
+//                """,
+//            countQuery = """
+//                SELECT COUNT(o)
+//                FROM Order o
+//                """
+//    )
+//    Page<Order> findAllWithItemsUsingJoinFetch(
+//            Pageable pageable
+//    );
 
 }
 

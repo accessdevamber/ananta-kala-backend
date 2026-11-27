@@ -16,6 +16,8 @@ spring:
     password: ${DB_PASSWORD}
 
   jpa:
+    #This helps prevent accidental lazy-loading queries outside our service layer
+    open-in-view: false
     hibernate:
       ddl-auto: validate
       default-schema: public
@@ -23,6 +25,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        query:
+          #This is a safeguard against future queries that Hibernate cannot safely paginate at the database level.
+          fail_on_pagination_over_collection_fetch: true
 
   flyway:
     enabled: true
