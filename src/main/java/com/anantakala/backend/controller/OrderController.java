@@ -3,6 +3,7 @@ package com.anantakala.backend.controller;
 import com.anantakala.backend.dto.PageResponse;
 import com.anantakala.backend.dto.order.CreateOrderRequest;
 import com.anantakala.backend.dto.order.OrderResponse;
+import com.anantakala.backend.dto.order.UpdateOrderStatusRequest;
 import com.anantakala.backend.service.OrderService;
 import jakarta.validation.Valid;
 
@@ -141,6 +142,21 @@ public class OrderController {
 
         return ResponseEntity.ok(orderService.getAll(pageable));
     }
+
+    @PatchMapping("/{orderId}/status")
+    public ResponseEntity<OrderResponse> updateStatus(
+
+            @PathVariable UUID orderId,
+
+            @Valid @RequestBody
+            UpdateOrderStatusRequest request
+    ) {
+
+        OrderResponse response = orderService.updateStatus(orderId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
 
     //demo
 //    @GetMapping("/demo/n-plus-one")

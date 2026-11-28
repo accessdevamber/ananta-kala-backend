@@ -3,10 +3,12 @@ package com.anantakala.backend.service;
 import com.anantakala.backend.dto.PageResponse;
 import com.anantakala.backend.dto.order.CreateOrderRequest;
 import com.anantakala.backend.dto.order.OrderResponse;
+import com.anantakala.backend.dto.order.UpdateOrderStatusRequest;
 import com.anantakala.backend.entity.*;
 import com.anantakala.backend.enums.CartStatus;
 import com.anantakala.backend.enums.OrderStatus;
 import com.anantakala.backend.enums.ProductStatus;
+import com.anantakala.backend.enums.ProductType;
 import com.anantakala.backend.mapper.OrderMapper;
 import com.anantakala.backend.repository.CartItemRepository;
 import com.anantakala.backend.repository.CartRepository;
@@ -270,6 +272,121 @@ public class OrderService {
         );
 
         return PageResponse.from(responsePage);
+    }
+
+    @Transactional
+    public OrderResponse updateStatus(
+            UUID orderId,
+            UpdateOrderStatusRequest request
+    ) {
+
+        log.info("Updating Order status. Order ID: {}, Requested status: {}", orderId, request.status());
+
+        // Fetch Order with pessimistic lock
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> {
+                    log.warn("Order not found: {}", orderId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Order not found: " + orderId
+                    );
+                });
+
+        OrderStatus currentStatus = order.getStatus();
+        OrderStatus requestedStatus = request.status();
+
+        // Same status requested — no update required
+        if (currentStatus == requestedStatus) {
+
+            log.info(
+                    "Order already has requested status. Order ID: {}, Status: {}",
+                    orderId,
+                    currentStatus
+            );
+
+            return orderMapper.toResponse(order);
+        }
+
+        // Cancellation is handled by a separate endpoint
+        if (requestedStatus == OrderStatus.CANCELLED) {
+            log.warn("Use the Order cancellation endpoint");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Use the Order cancellation endpoint"
+            );
+        }
+
+        // Validate business rules
+        validateStatusTransition(order, requestedStatus);
+
+        // Update Order status
+        order.setStatus(requestedStatus);
+
+        // Flush changes to database
+        orderRepository.flush();
+
+        log.info(
+                "Order status updated successfully. Order ID: {}, "
+                        + "Previous status: {}, New status: {}",
+                orderId,
+                currentStatus,
+                requestedStatus
+        );
+
+        return orderMapper.toResponse(order);
+    }
+
+    private void validateStatusTransition(
+            Order order,
+            OrderStatus requestedStatus
+    ) {
+
+        OrderStatus currentStatus = order.getStatus();
+
+        boolean validTransition = switch (currentStatus) {
+
+            case PENDING ->
+                    requestedStatus == OrderStatus.CONFIRMED;
+
+            case CONFIRMED ->
+                    requestedStatus == OrderStatus.PROCESSING;
+
+            case PROCESSING -> {
+
+                boolean hasPhysicalItems = order.getItems()
+                        .stream()
+                        .anyMatch(item ->
+                                item.getProductType()
+                                        == ProductType.FRAMED_CANVAS
+                        );
+
+                if (hasPhysicalItems) {
+
+                    yield requestedStatus == OrderStatus.SHIPPED;
+
+                } else {
+
+                    yield requestedStatus == OrderStatus.COMPLETED;
+                }
+            }
+
+            case SHIPPED ->
+                    requestedStatus == OrderStatus.COMPLETED;
+
+            case COMPLETED, CANCELLED ->
+                    false;
+        };
+
+        if (!validTransition) {
+            log.warn("Invalid Order status transition: {} -> {}", currentStatus, requestedStatus);
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Invalid Order status transition: "
+                            + currentStatus
+                            + " -> "
+                            + requestedStatus
+            );
+        }
     }
 
 //    @Transactional(readOnly = true)
